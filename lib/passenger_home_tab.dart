@@ -10,12 +10,14 @@ class PassengerHomeTab extends StatefulWidget {
 class _PassengerHomeTabState extends State<PassengerHomeTab> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Stack(
       children: [
-        // 1. The Map Placeholder (Using location image as a map proxy)
         SizedBox.expand(
           child: Image.asset(
-            'lib/assets/images/map.png',
+            isDark ? 'lib/assets/images/dark.png' : 'lib/assets/images/map.png',
             fit: BoxFit.cover,
           ),
         ),
@@ -28,12 +30,12 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
             builder: (context) {
               return FloatingActionButton(
                 heroTag: 'menu_btn',
-                backgroundColor: Colors.white,
+                backgroundColor: theme.scaffoldBackgroundColor,
                 elevation: 4,
                 onPressed: () {
                   Scaffold.of(context).openDrawer();
                 },
-                child: const Icon(Icons.menu, color: Color(0xFF0F265C)),
+                child: Icon(Icons.menu, color: theme.colorScheme.primary),
               );
             }
           ),
@@ -47,11 +49,11 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
+              color: theme.scaffoldBackgroundColor.withOpacity(0.95),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  color: Colors.black.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -64,17 +66,17 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         'Pickup point',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                        style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : const Color(0xFF475569)),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Gujrat Road, Gulshan Colony...',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F265C),
+                          color: theme.colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -82,7 +84,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+                Icon(Icons.chevron_right, color: isDark ? Colors.grey[600] : const Color(0xFF94A3B8)),
               ],
             ),
           ),
@@ -91,7 +93,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
         // 4. Center Map Pin
         Center(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 40.0), // Offset for the pin tip
+            padding: const EdgeInsets.only(bottom: 40.0),
             child: Container(
               width: 50,
               height: 50,
@@ -100,7 +102,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -110,7 +112,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                 child: Container(
                   width: 15,
                   height: 15,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.black,
                     shape: BoxShape.circle,
                   ),
@@ -126,12 +128,10 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
           right: 16,
           child: FloatingActionButton(
             heroTag: 'location_btn',
-            backgroundColor: Colors.white,
+            backgroundColor: theme.scaffoldBackgroundColor,
             elevation: 4,
-            onPressed: () {
-              // Placeholder action
-            },
-            child: const Icon(Icons.my_location, color: Color(0xFF0F265C)),
+            onPressed: () {},
+            child: Icon(Icons.my_location, color: theme.colorScheme.primary),
           ),
         ),
         
@@ -142,6 +142,9 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
   }
 
   Widget _buildBottomSheet() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.42,
       minChildSize: 0.2,
@@ -149,14 +152,14 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9), // Light grayish background
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(30),
               topRight: Radius.circular(30),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
+                color: Colors.black.withOpacity(0.2),
                 blurRadius: 20,
                 offset: const Offset(0, -5),
               ),
@@ -175,7 +178,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
+                      color: isDark ? Colors.grey[700] : const Color(0xFFCBD5E1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -187,17 +190,22 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E3A8A), // Deep blue
+                      color: isDark ? theme.colorScheme.primary.withOpacity(0.2) : const Color(0xFF1E3A8A),
                       borderRadius: BorderRadius.circular(12),
+                      border: isDark ? Border.all(color: theme.colorScheme.primary.withOpacity(0.3)) : null,
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.toll, color: Color(0xFFD4AF37)),
-                        SizedBox(width: 12),
+                        const Icon(Icons.toll, color: Color(0xFFD4AF37)),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Toll roads aren\'t included in the fare.\nPlease pay them separately.',
-                            style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                            style: TextStyle(
+                              color: isDark ? theme.colorScheme.onSurface : Colors.white, 
+                              fontSize: 13, 
+                              height: 1.4,
+                            ),
                           ),
                         ),
                       ],
@@ -231,16 +239,20 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE2E8F0),
+                      color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFE2E8F0),
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.search, color: Color(0xFF0F265C)),
-                        SizedBox(width: 12),
+                        Icon(Icons.search, color: theme.colorScheme.primary),
+                        const SizedBox(width: 12),
                         Text(
                           'Where to & for how much?',
-                          style: TextStyle(color: Color(0xFF0F265C), fontSize: 16, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7), 
+                            fontSize: 16, 
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -263,9 +275,9 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                 ),
                 const SizedBox(height: 24),
                 
-                // Promo Cards (Share ride, Request car, etc)
+                // Promo Cards
                 Container(
-                  color: Colors.white,
+                  color: isDark ? theme.scaffoldBackgroundColor : Colors.white,
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -276,7 +288,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                           Expanded(
                             child: _buildPromoCard(
                               title: 'Share your ride',
-                              imagePath: 'lib/assets/images/car.png', 
+                              imagePath: 'lib/assets/images/share.png', 
                               height: 100,
                             ),
                           ),
@@ -285,7 +297,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                             child: _buildPromoCard(
                               title: 'Request a car',
                               imagePath: 'lib/assets/images/car.png',
-                              height: 140, // Taller card
+                              height: 140,
                             ),
                           ),
                         ],
@@ -295,7 +307,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                         width: MediaQuery.of(context).size.width * 0.47,
                         child: _buildPromoCard(
                           title: 'Send a parcel',
-                          imagePath: 'lib/assets/images/car.png',
+                          imagePath: 'lib/assets/images/percel.png',
                           height: 100,
                         ),
                       ),
@@ -308,7 +320,7 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                             child: ElevatedButton(
                               onPressed: () {},
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F265C),
+                                backgroundColor: theme.colorScheme.primary,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
@@ -318,18 +330,32 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.credit_card, size: 16, color: Color(0xFF475569)),
-                                  SizedBox(width: 4),
-                                  Text('Payment: Visa 4242', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  Icon(Icons.credit_card, size: 16, color: isDark ? Colors.grey[400] : const Color(0xFF475569)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Payment: Visa 4242', 
+                                    style: TextStyle(
+                                      fontSize: 12, 
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              SizedBox(height: 4),
-                              Text('Estimated Fare: \$15.50 - \$18.00', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Estimated Fare: \$15.50 - \$18.00', 
+                                style: TextStyle(
+                                  fontSize: 12, 
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -347,25 +373,28 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
   }
 
   Widget _buildVehicleOption(String title, String imagePath, {IconData? icon, required bool isSelected}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       children: [
         Container(
           width: 80,
           height: 50,
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF0F265C) : Colors.transparent,
+            color: isSelected ? theme.colorScheme.primary : (isDark ? Colors.white.withOpacity(0.05) : Colors.transparent),
             borderRadius: BorderRadius.circular(12),
             border: isSelected ? Border.all(color: const Color(0xFFD4AF37), width: 1.5) : null,
           ),
           child: icon != null
-              ? Icon(icon, size: 30, color: isSelected ? Colors.white : Colors.black87)
+              ? Icon(icon, size: 30, color: isSelected ? Colors.white : theme.colorScheme.onSurface)
               : Image.asset(imagePath, fit: BoxFit.contain),
         ),
         const SizedBox(height: 8),
         Text(
           title,
           style: TextStyle(
-            color: isSelected ? const Color(0xFF0F265C) : Colors.black87,
+            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             fontSize: 13,
           ),
@@ -375,37 +404,61 @@ class _PassengerHomeTabState extends State<PassengerHomeTab> {
   }
 
   Widget _buildActionItem(IconData icon, String title, {String? subtitle}) {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFF0F265C), size: 28),
+        Icon(icon, color: theme.colorScheme.primary, size: 28),
         const SizedBox(height: 6),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F265C))),
+        Text(
+          title, 
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            fontSize: 12, 
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         if (subtitle != null)
-          Text(subtitle, style: const TextStyle(fontSize: 10, color: Color(0xFF475569))),
+          Text(
+            subtitle, 
+            style: TextStyle(
+              fontSize: 10, 
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildPromoCard({required String title, required String imagePath, required double height}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       height: height,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.1) : const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+          Text(
+            title, 
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: 15, 
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
           const Spacer(),
           Align(
             alignment: Alignment.bottomRight,

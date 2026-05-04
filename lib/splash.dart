@@ -39,6 +39,22 @@ class _SplashScreenState extends State<SplashScreen>
     _startApp();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _precacheAssets();
+  }
+
+  void _precacheAssets() {
+    precacheImage(const AssetImage('lib/assets/images/logo.png'), context);
+    precacheImage(const AssetImage('lib/assets/images/map.png'), context);
+    precacheImage(const AssetImage('lib/assets/images/dark.png'), context);
+    precacheImage(const AssetImage('lib/assets/images/passenger.png'), context);
+    precacheImage(const AssetImage('lib/assets/images/car.png'), context);
+    precacheImage(const AssetImage('lib/assets/images/share.png'), context);
+    precacheImage(const AssetImage('lib/assets/images/percel.png'), context);
+  }
+
   void _startApp() async {
     // Wait for the 2-second fade-in animation to complete
     await _ctrl.forward();

@@ -22,7 +22,7 @@ class GetStartedScreen extends StatelessWidget {
                       Image.asset(
                         'lib/assets/images/logo.png',
                         height: 32,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.car_rental),
+                        errorBuilder: (_, _, _) => const Icon(Icons.car_rental),
                       ),
                       const SizedBox(width: 8),
                       const Text(

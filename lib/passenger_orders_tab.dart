@@ -85,11 +85,14 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
       appBar: AppBar(
-        title: const Text('Ride History', style: TextStyle(color: Color(0xFF0F265C), fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: Text('Ride History', style: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold)),
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
       ),
@@ -97,7 +100,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
         children: [
           // Professional Filter Tabs
           Container(
-            color: Colors.white,
+            color: theme.scaffoldBackgroundColor,
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -133,15 +136,17 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history_outlined, size: 80, color: Colors.grey.withValues(alpha: 0.3)),
+          Icon(Icons.history_outlined, size: 80, color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text(
             'No $_selectedFilter rides found',
-            style: const TextStyle(fontSize: 16, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+            style: TextStyle(fontSize: 16, color: isDark ? Colors.grey[500] : const Color(0xFF64748B), fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -149,6 +154,8 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
   }
 
   Widget _buildFilterChip(String label) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isSelected = _selectedFilter == label;
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = label),
@@ -157,11 +164,11 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0F265C) : const Color(0xFFF1F5F9),
+          color: isSelected ? theme.colorScheme.primary : (isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(25),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: const Color(0xFF0F265C).withValues(alpha: 0.2),
+              color: theme.colorScheme.primary.withOpacity(0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -170,7 +177,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF64748B),
+            color: isSelected ? Colors.white : (isDark ? Colors.grey[400] : const Color(0xFF64748B)),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
           ),
         ),
@@ -179,14 +186,17 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -206,10 +216,10 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F265C).withValues(alpha: 0.05),
+                        color: theme.colorScheme.primary.withOpacity(0.05),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(order['vehicleIcon'] as IconData, size: 18, color: const Color(0xFF0F265C)),
+                      child: Icon(order['vehicleIcon'] as IconData, size: 18, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -217,9 +227,9 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                       children: [
                         Text(
                           order['vehicleType'] as String,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F265C)),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.onSurface),
                         ),
-                        Text(order['id'] as String, style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                        Text(order['id'] as String, style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8))),
                       ],
                     ),
                   ],
@@ -227,7 +237,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: (order['statusColor'] as Color).withValues(alpha: 0.1),
+                    color: (order['statusColor'] as Color).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -239,7 +249,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
             ),
           ),
           
-          const Divider(height: 1),
+          Divider(height: 1, color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
           
           // Route info
           Padding(
@@ -250,8 +260,8 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                 // Route line
                 Column(
                   children: [
-                    const Icon(Icons.radio_button_checked, size: 16, color: Color(0xFF2B5DA6)),
-                    Container(width: 1.5, height: 35, color: const Color(0xFFE2E8F0)),
+                    Icon(Icons.radio_button_checked, size: 16, color: theme.colorScheme.primary),
+                    Container(width: 1.5, height: 35, color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
                     const Icon(Icons.location_on, size: 16, color: Color(0xFFD4AF37)),
                   ],
                 ),
@@ -260,16 +270,16 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(order['from'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF334155))),
+                      Text(order['from'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface)),
                       const SizedBox(height: 24),
-                      Text(order['to'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF334155))),
+                      Text(order['to'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface)),
                     ],
                   ),
                 ),
                 // Fare
                 Text(
                   order['fare'] as String,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF0F265C)),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: theme.colorScheme.primary),
                 ),
               ],
             ),
@@ -278,33 +288,33 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
           // Footer: Driver info and Action
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black26 : const Color(0xFFF8FAFC),
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 14,
-                  backgroundColor: const Color(0xFFE2E8F0),
-                  child: const Icon(Icons.person, size: 16, color: Color(0xFF64748B)),
+                  backgroundColor: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                  child: Icon(Icons.person, size: 16, color: isDark ? Colors.grey[400] : const Color(0xFF64748B)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(order['driver'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-                      Text(order['plate'] as String, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+                      Text(order['driver'] as String, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.grey[300] : const Color(0xFF475569))),
+                      Text(order['plate'] as String, style: TextStyle(fontSize: 10, color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8))),
                     ],
                   ),
                 ),
                 Text(
                   order['date'] as String,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 11, color: isDark ? Colors.grey[500] : const Color(0xFF64748B), fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, size: 18, color: Color(0xFF94A3B8)),
+                Icon(Icons.chevron_right, size: 18, color: isDark ? Colors.grey[700] : const Color(0xFF94A3B8)),
               ],
             ),
           ),
