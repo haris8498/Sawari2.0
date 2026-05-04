@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'main.dart'; // Import to access themeNotifier
 
-class PassengerProfileTab extends StatelessWidget {
-  const PassengerProfileTab({super.key});
+class DriverProfileTab extends StatelessWidget {
+  const DriverProfileTab({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -10,9 +10,7 @@ class PassengerProfileTab extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF1F5F9),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -22,16 +20,41 @@ class PassengerProfileTab extends StatelessWidget {
 
             Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
+                horizontal: 24.0,
                 vertical: 24.0,
               ),
               child: Column(
                 children: [
-                  // Stats Section
+                  // Performance Stats Section
                   _buildStatsRow(context),
                   const SizedBox(height: 32),
 
-                  // Menu Sections
+                  // Vehicle & Documents (Driver Specific)
+                  _buildSectionTitle(context, 'Vehicle & Documents'),
+                  _buildProfileMenuItem(
+                    context,
+                    Icons.directions_car_outlined,
+                    'Vehicle Information',
+                    'Toyota Corolla • LEC-1234',
+                  ),
+                  _buildDocumentMenuItem(
+                    context,
+                    Icons.badge_outlined,
+                    'Driving License',
+                    'Approved',
+                    const Color(0xFF10B981), // Green
+                  ),
+                  _buildDocumentMenuItem(
+                    context,
+                    Icons.description_outlined,
+                    'Vehicle Registration',
+                    'Pending Review',
+                    const Color(0xFFF59E0B), // Amber
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Account Settings
                   _buildSectionTitle(context, 'Account Settings'),
                   _buildProfileMenuItem(
                     context,
@@ -41,30 +64,20 @@ class PassengerProfileTab extends StatelessWidget {
                   ),
                   _buildProfileMenuItem(
                     context,
-                    Icons.lock_outline,
-                    'Password & Security',
-                    'Manage your password',
-                  ),
-                  _buildProfileMenuItem(
-                    context,
-                    Icons.credit_card_outlined,
-                    'Payment Methods',
-                    'Manage cards and wallet',
+                    Icons.account_balance_outlined,
+                    'Bank Details',
+                    'Manage payout methods',
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Preferences
                   _buildSectionTitle(context, 'Preferences'),
                   _buildProfileMenuItem(
                     context,
-                    Icons.language_outlined,
-                    'Language',
-                    'English (US)',
-                  ),
-                  _buildProfileMenuItem(
-                    context,
-                    Icons.notifications_none_outlined,
-                    'Notifications',
-                    'App sounds and alerts',
+                    Icons.navigation_outlined,
+                    'Navigation',
+                    'Google Maps (Default)',
                   ),
 
                   // Interactive Theme Toggle
@@ -75,31 +88,23 @@ class PassengerProfileTab extends StatelessWidget {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Material(
-                          color: isDarkNow
-                              ? Colors.white.withOpacity(0.05)
-                              : Colors.white,
+                          color: isDarkNow ? Colors.white.withOpacity(0.05) : Colors.white,
                           borderRadius: BorderRadius.circular(16),
+                          clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
                             onTap: () {
-                              themeNotifier.value = isDarkNow
-                                  ? ThemeMode.light
-                                  : ThemeMode.dark;
+                              themeNotifier.value = isDarkNow ? ThemeMode.light : ThemeMode.dark;
                             },
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                               leading: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: isDarkNow
-                                      ? Colors.white.withOpacity(0.05)
-                                      : const Color(0xFFF1F5F9),
+                                  color: isDarkNow ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
-                                  isDarkNow
-                                      ? Icons.dark_mode_outlined
-                                      : Icons.light_mode_outlined,
+                                  isDarkNow ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
                                   color: theme.colorScheme.primary,
                                   size: 22,
                                 ),
@@ -117,18 +122,14 @@ class PassengerProfileTab extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
-                                  color: isDarkNow
-                                      ? Colors.grey[500]
-                                      : const Color(0xFF94A3B8),
+                                  color: isDarkNow ? Colors.grey[500] : const Color(0xFF94A3B8),
                                 ),
                               ),
                               trailing: Switch(
                                 value: isDarkNow,
                                 activeColor: theme.colorScheme.primary,
                                 onChanged: (val) {
-                                  themeNotifier.value = val
-                                      ? ThemeMode.dark
-                                      : ThemeMode.light;
+                                  themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
                                 },
                               ),
                             ),
@@ -139,24 +140,20 @@ class PassengerProfileTab extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Support
                   _buildSectionTitle(context, 'Support & Legal'),
                   _buildProfileMenuItem(
                     context,
                     Icons.help_outline,
-                    'Help Center',
+                    'Driver Help Center',
                     'FAQs and Support',
                   ),
                   _buildProfileMenuItem(
                     context,
-                    Icons.description_outlined,
-                    'Privacy Policy',
-                    'Data usage and rights',
-                  ),
-                  _buildProfileMenuItem(
-                    context,
-                    Icons.info_outline,
-                    'About Sawari',
-                    'Version 1.0.0',
+                    Icons.emergency_outlined,
+                    'Emergency Contacts',
+                    'Manage trusted contacts',
                   ),
 
                   const SizedBox(height: 40),
@@ -167,9 +164,7 @@ class PassengerProfileTab extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         // Handle logout logic
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
+                        Navigator.of(context).popUntil((route) => route.isFirst);
                       },
                       icon: const Icon(Icons.logout, color: Colors.redAccent, size: 22),
                       style: OutlinedButton.styleFrom(
@@ -184,7 +179,7 @@ class PassengerProfileTab extends StatelessWidget {
                         ),
                       ),
                       label: const Text(
-                        'Log Out',
+                        'Go Offline & Log Out',
                         style: TextStyle(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.bold,
@@ -215,7 +210,7 @@ class PassengerProfileTab extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             theme.colorScheme.primary,
-            isDark ? theme.colorScheme.primary.withOpacity(0.6) : theme.colorScheme.primaryContainer,
+            isDark ? theme.colorScheme.primary.withOpacity(0.6) : const Color(0xFF113677),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -244,7 +239,7 @@ class PassengerProfileTab extends StatelessWidget {
                     ),
                   ],
                   image: const DecorationImage(
-                    image: AssetImage('lib/assets/images/passenger.png'),
+                    image: AssetImage('lib/assets/images/driver.png'),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -266,7 +261,7 @@ class PassengerProfileTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
                 ),
               ),
             ],
@@ -276,7 +271,7 @@ class PassengerProfileTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
-                'Haris',
+                'Ahmed Ali',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 26,
@@ -288,7 +283,7 @@ class PassengerProfileTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFD4AF37),
+                  color: Color(0xFF10B981), // Emerald Green for Driver verification
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, color: Colors.white, size: 14),
@@ -297,7 +292,7 @@ class PassengerProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'haris@example.com',
+            '+92 300 1234567',
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,
@@ -318,6 +313,7 @@ class PassengerProfileTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.transparent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.3 : 0.04),
@@ -329,29 +325,36 @@ class PassengerProfileTab extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(context, 'Total Rides', '124'),
+          _buildStatItem(context, 'Rating', '4.95', icon: Icons.star, iconColor: const Color(0xFFF59E0B)),
           _buildDivider(context),
-          _buildStatItem(context, 'Rating', '4.9'),
+          _buildStatItem(context, 'Acceptance', '94%', icon: Icons.check_circle, iconColor: const Color(0xFF10B981)),
           _buildDivider(context),
-          _buildStatItem(context, 'Joined', '2 Years'),
+          _buildStatItem(context, 'Total Trips', '1,248', icon: Icons.route, iconColor: theme.colorScheme.primary),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value) {
+  Widget _buildStatItem(BuildContext context, String label, String value, {required IconData icon, required Color iconColor}) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 6),
         Text(
@@ -410,19 +413,15 @@ class PassengerProfileTab extends StatelessWidget {
       child: Material(
         color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias, // Ensures the ripple stays inside the rounded corners
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () {
-            // Future tap logic
-          },
+          onTap: () {},
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             leading: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : const Color(0xFFF1F5F9),
+                color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: theme.colorScheme.primary, size: 22),
@@ -442,6 +441,71 @@ class PassengerProfileTab extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8),
               ),
+            ),
+            trailing: Icon(
+              Icons.chevron_right,
+              color: isDark ? Colors.grey[600] : const Color(0xFFCBD5E1),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Specialized widget for Document Status
+  Widget _buildDocumentMenuItem(
+      BuildContext context,
+      IconData icon,
+      String title,
+      String status,
+      Color statusColor,
+      ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {},
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            subtitle: Row(
+              children: [
+                Icon(
+                  status == 'Approved' ? Icons.check_circle : Icons.pending,
+                  size: 14,
+                  color: statusColor,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+              ],
             ),
             trailing: Icon(
               Icons.chevron_right,

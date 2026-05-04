@@ -13,15 +13,18 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _fadeAnim;
+  bool _imagesPrecached = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Set system UI to match the deep blue bottom of the splash screen
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Color(0xFF0F265C),
+        systemNavigationBarColor: Color(0xFF0B2154), // Matched to bottom gradient
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
@@ -34,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeAnim = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic)); // Smoother fade curve
 
     _startApp();
   }
@@ -42,7 +45,11 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _precacheAssets();
+    // Prevent precache from running multiple times if dependencies change
+    if (!_imagesPrecached) {
+      _precacheAssets();
+      _imagesPrecached = true;
+    }
   }
 
   void _precacheAssets() {
@@ -57,11 +64,17 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _startApp() async {
     // Wait for the 2-second fade-in animation to complete
-    await _ctrl.forward();
-    // Keep the splash screen fully visible for exactly 4 seconds
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+    try {
+      await _ctrl.forward().orCancel;
+      // Keep the splash screen fully visible for exactly 1 more second (3s total)
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        // Reset System UI for the next screens if needed here, or let the next screen handle it
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } on TickerCanceled {
+      // The animation got canceled (e.g., user exited the app), do nothing
     }
   }
 
@@ -112,16 +125,24 @@ class _SplashScreenState extends State<SplashScreen>
                     height: 220,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.image_not_supported,
-                        size: 100,
-                        color: Colors.white,
+                      return Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.local_taxi_rounded,
+                          size: 60,
+                          color: Colors.white,
+                        ),
                       );
                     },
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 // Title
                 ShaderMask(
@@ -134,24 +155,25 @@ class _SplashScreenState extends State<SplashScreen>
                     'SAWARI',
                     style: TextStyle(
                       fontFamily: 'Times New Roman',
-                      fontSize: 56,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 6.0,
+                      fontSize: 52,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 8.0,
                       color: Colors.white,
+                      height: 1.2,
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
 
                 // Subtitle
                 const Text(
                   'Your Ride, Your Price',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFFD4AF37), // Gold color
-                    letterSpacing: 1.2,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFE8C678), // Softer Gold color for better readability
+                    letterSpacing: 1.5,
                   ),
                 ),
 
@@ -174,9 +196,10 @@ class WavesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+      ..color = Colors.white.withOpacity(0.15)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 1.2
+      ..isAntiAlias = true; // Ensures smooth, non-pixelated curves
 
     for (int i = 0; i < 30; i++) {
       final path = Path();
@@ -216,8 +239,8 @@ class BottomKnob extends StatelessWidget {
           // Rotating Dial (Silver Ring + Inner Circles + Bolts)
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
-            duration: const Duration(seconds: 3),
-            curve: Curves.easeInOutCubic,
+            duration: const Duration(seconds: 4),
+            curve: Curves.easeOutQuart, // Decelerating smooth curve
             builder: (context, value, child) {
               return Transform.rotate(
                 angle: value * 2 * pi, // Full 360 degree rotation
@@ -238,18 +261,20 @@ class BottomKnob extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
                         colors: [
+                          Color(0xFFF5F5F5),
                           Color(0xFFE0E0E0),
                           Color(0xFF9E9E9E),
-                          Color(0xFFF5F5F5),
+                          Color(0xFFE0E0E0),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
+                        stops: [0.0, 0.3, 0.7, 1.0],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          color: Colors.black.withOpacity(0.3), // Softened shadow
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
                         ),
                       ],
                     ),
@@ -257,28 +282,35 @@ class BottomKnob extends StatelessWidget {
                       padding: const EdgeInsets.all(8.0),
                       // Inner Gold Ring
                       child: Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(
+                          gradient: const LinearGradient(
                             colors: [
-                              Color(0xFFD4AF37),
                               Color(0xFFFFF1C5),
+                              Color(0xFFD4AF37),
                               Color(0xFF996515),
                             ],
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.all(5.0),
+                          padding: const EdgeInsets.all(6.0),
                           // Inner Blue Circle with marble cracks
                           child: Container(
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
-                                colors: [Color(0xFF1E4C9A), Color(0xFF091636)],
+                                colors: [Color(0xFF2A5CAA), Color(0xFF091636)],
                                 center: Alignment(-0.3, -0.3),
-                                radius: 0.8,
+                                radius: 0.9,
                               ),
                             ),
                             child: CustomPaint(painter: MarblePainter()),
@@ -301,7 +333,7 @@ class BottomKnob extends StatelessWidget {
 
   List<Widget> _buildBolts() {
     List<Widget> bolts = [];
-    double radius = 62;
+    double radius = 61; // Adjusted slightly for optical center
     for (int i = 0; i < 4; i++) {
       double angle = i * pi / 2 + pi / 4;
       bolts.add(
@@ -311,19 +343,24 @@ class BottomKnob extends StatelessWidget {
           child: Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0xFFBDBDBD),
+              color: const Color(0xFFBDBDBD),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFEEEEEE), Color(0xFF9E9E9E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black45,
+                  color: Colors.black.withOpacity(0.4),
                   blurRadius: 2,
-                  offset: Offset(1, 1),
+                  offset: const Offset(1, 1),
                 ),
                 BoxShadow(
-                  color: Colors.white,
+                  color: Colors.white.withOpacity(0.8),
                   blurRadius: 2,
-                  offset: Offset(-1, -1),
+                  offset: const Offset(-1, -1),
                 ),
               ],
             ),
@@ -339,9 +376,10 @@ class MarblePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFD4AF37).withOpacity(0.5)
+      ..color = const Color(0xFFD4AF37).withOpacity(0.6)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
+      ..strokeWidth = 1.0
+      ..isAntiAlias = true;
 
     final path = Path();
     path.moveTo(size.width * 0.2, 0);

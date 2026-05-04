@@ -52,11 +52,12 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
       body: _getPage(_currentIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: Colors.black.withOpacity(isDark ? 0.4 : 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
@@ -70,11 +71,10 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: theme.scaffoldBackgroundColor,
           selectedItemColor: theme.colorScheme.primary,
-          unselectedItemColor: isDark
-              ? Colors.grey[600]
-              : const Color(0xFF94A3B8),
+          unselectedItemColor: isDark ? Colors.grey[500] : const Color(0xFF94A3B8),
+          elevation: 0, // Handled by Container's boxShadow for a softer look
           selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             fontSize: 12,
           ),
           unselectedLabelStyle: const TextStyle(
@@ -83,23 +83,47 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
           ),
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.route_outlined),
-              activeIcon: Icon(Icons.route),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.route_outlined),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.route),
+              ),
               label: 'Ride',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_outlined),
-              activeIcon: Icon(Icons.receipt_long),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.receipt_long_outlined),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.receipt_long),
+              ),
               label: 'My orders',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              activeIcon: Icon(Icons.account_balance_wallet),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.account_balance_wallet_outlined),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.account_balance_wallet),
+              ),
               label: 'Wallet',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
+              icon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.person_outline),
+              ),
+              activeIcon: Padding(
+                padding: EdgeInsets.only(bottom: 4.0),
+                child: Icon(Icons.person),
+              ),
               label: 'Profile',
             ),
           ],
@@ -114,235 +138,232 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
 
     return Drawer(
       backgroundColor: theme.scaffoldBackgroundColor,
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.only(
-              top: 60,
-              bottom: 20,
-              left: 24,
-              right: 24,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: AssetImage('lib/assets/images/passenger.png'),
-                      fit: BoxFit.cover,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: const CircleAvatar(
+                      backgroundImage: AssetImage('lib/assets/images/passenger.png'),
+                      backgroundColor: Colors.transparent,
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Haris',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Haris',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          Icon(
-                            Icons.star,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '4.80 (0)',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 13,
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            ...List.generate(5, (index) => Icon(
+                              Icons.star,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            )),
+                            const SizedBox(width: 6),
+                            Text(
+                              '4.80 (0)',
+                              style: TextStyle(
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          const Divider(),
-
-          // Menu Items
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildDrawerItem(
-                  Icons.directions_car_outlined,
-                  'City',
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => _currentIndex = 0);
-                  },
-                ),
-                _buildDrawerItem(
-                  Icons.access_time,
-                  'Request history',
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => _currentIndex = 1);
-                  },
-                ),
-                _buildDrawerItem(
-                  Icons.public,
-                  'City to City',
-                  isSelected: true,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // We can add a specialized screen later or just show home for now
-                    setState(() => _currentIndex = 0);
-                  },
-                ),
-
-                _buildDrawerItem(
-                  Icons.notifications_none,
-                  'Notifications',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  Icons.verified_user_outlined,
-                  'Safety',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SafetyScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  Icons.settings_outlined,
-                  'Settings',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  Icons.info_outline,
-                  'Help',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const HelpSupportScreen(title: 'Help Center'),
-                      ),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  Icons.chat_bubble_outline,
-                  'Support',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const HelpSupportScreen(title: 'Support'),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Driver Mode Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const DriverSignUpScreen(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              child: const Text(
-                'Driver Mode',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                ],
               ),
             ),
-          ),
 
-          // Social Icons
-          Padding(
-            padding: const EdgeInsets.only(bottom: 30, top: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildSocialIcon(Icons.facebook),
-                const SizedBox(width: 20),
-                _buildSocialIcon(Icons.camera_alt_outlined),
-              ],
+            Divider(
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
+              thickness: 1,
+              height: 1,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+
+            // Menu Items
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _buildDrawerItem(
+                    Icons.directions_car_outlined,
+                    'City',
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _currentIndex = 0);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    Icons.access_time,
+                    'Request history',
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _currentIndex = 1);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    Icons.public,
+                    'City to City',
+                    isSelected: true,
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _currentIndex = 0);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(
+                    color: isDark ? Colors.grey[800] : Colors.grey[200],
+                    indent: 24,
+                    endIndent: 24,
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDrawerItem(
+                    Icons.notifications_none,
+                    'Notifications',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    Icons.verified_user_outlined,
+                    'Safety',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SafetyScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    Icons.settings_outlined,
+                    'Settings',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    Icons.info_outline,
+                    'Help',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                          const HelpSupportScreen(title: 'Help Center'),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    Icons.chat_bubble_outline,
+                    'Support',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                          const HelpSupportScreen(title: 'Support'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Driver Mode Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close drawer
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DriverSignUpScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  elevation: 2,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Driver Mode',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            // Social Icons
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24, top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildSocialIcon(Icons.facebook),
+                  const SizedBox(width: 24),
+                  _buildSocialIcon(Icons.camera_alt_outlined),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -420,26 +441,32 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
   }
 
   Widget _buildDrawerItem(
-    IconData icon,
-    String title, {
-    bool isSelected = false,
-    VoidCallback? onTap,
-  }) {
+      IconData icon,
+      String title, {
+        bool isSelected = false,
+        VoidCallback? onTap,
+      }) {
     final theme = Theme.of(context);
-    return Container(
-      color: isSelected
-          ? theme.colorScheme.primary.withOpacity(0.1)
-          : Colors.transparent,
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: ListTile(
-        leading: Icon(icon, color: theme.colorScheme.primary, size: 28),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        selected: isSelected,
+        selectedTileColor: theme.colorScheme.primary.withOpacity(0.1),
+        leading: Icon(
+            icon,
+            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+            size: 26
+        ),
         title: Text(
           title,
           style: TextStyle(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurface,
-            fontSize: 18,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+            fontSize: 16,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
         onTap: onTap,
@@ -448,6 +475,13 @@ class _PassengerDashboardState extends State<PassengerDashboard> {
   }
 
   Widget _buildSocialIcon(IconData icon) {
-    return Icon(icon, color: Theme.of(context).colorScheme.primary, size: 30);
+    return IconButton(
+      icon: Icon(icon),
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+      iconSize: 28,
+      onPressed: () {
+        // Handle social link logic here later
+      },
+    );
   }
 }

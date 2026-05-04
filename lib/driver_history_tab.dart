@@ -1,86 +1,82 @@
 import 'package:flutter/material.dart';
 
-class PassengerOrdersTab extends StatefulWidget {
-  const PassengerOrdersTab({super.key});
+class DriverHistoryTab extends StatefulWidget {
+  const DriverHistoryTab({super.key});
 
   @override
-  State<PassengerOrdersTab> createState() => _PassengerOrdersTabState();
+  State<DriverHistoryTab> createState() => _DriverHistoryTabState();
 }
 
-class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
+class _DriverHistoryTabState extends State<DriverHistoryTab> {
   String _selectedFilter = 'All';
 
-  final List<Map<String, dynamic>> _allOrders = [
+  // Dummy data tailored for a Driver's perspective
+  final List<Map<String, dynamic>> _allRides = [
     {
-      'id': '#SW-8271',
-      'date': 'Today, 10:30 AM',
-      'from': 'Gulshan Colony, Jalalpur Jattan',
-      'to': 'GT Road, Gujrat',
-      'fare': '\$12.50',
+      'id': '#TRP-8271',
+      'date': 'Today, 2:45 PM',
+      'passenger': 'Zaid Khan',
+      'rating': '4.8',
+      'from': 'University of Gujrat',
+      'to': 'Kutchery Chowk',
+      'earnings': '+\$14.50',
+      'paymentType': 'Wallet',
       'status': 'Completed',
-      'statusColor': Colors.green,
-      'vehicleType': 'Ride (Car)',
-      'vehicleIcon': Icons.directions_car,
-      'driver': 'Ahmed Ali',
-      'plate': 'LEC-1234',
+      'statusColor': const Color(0xFF10B981), // Emerald Green
     },
     {
-      'id': '#SW-9982',
-      'date': 'Tomorrow, 08:00 AM',
-      'from': 'Home (Model Town)',
-      'to': 'Office Tower A',
-      'fare': '\$10.00',
-      'status': 'Upcoming',
-      'statusColor': const Color(0xFFD4AF37),
-      'vehicleType': 'Ride (Car)',
-      'vehicleIcon': Icons.directions_car,
-      'driver': 'Waiting for assignment',
-      'plate': '---',
-    },
-    {
-      'id': '#SW-7129',
-      'date': 'Yesterday, 06:15 PM',
-      'from': 'Kutchery Chowk, Gujrat',
-      'to': 'University of Gujrat',
-      'fare': '\$18.00',
+      'id': '#TRP-9982',
+      'date': 'Today, 11:20 AM',
+      'passenger': 'Sarah Ahmed',
+      'rating': '5.0',
+      'from': 'Model Town',
+      'to': 'City Hospital',
+      'earnings': '+\$8.00',
+      'paymentType': 'Cash',
       'status': 'Completed',
-      'statusColor': Colors.green,
-      'vehicleType': 'City to City',
-      'vehicleIcon': Icons.location_city,
-      'driver': 'Zaid Khan',
-      'plate': 'GTR-5678',
+      'statusColor': const Color(0xFF10B981),
     },
     {
-      'id': '#SW-6541',
-      'date': '02 May, 09:00 AM',
-      'from': 'Fawara Chowk',
-      'to': 'Railway Station, Gujrat',
-      'fare': '\$5.00',
+      'id': '#TRP-7129',
+      'date': 'Yesterday, 3:15 PM',
+      'passenger': 'M. Usman',
+      'rating': '4.5',
+      'from': 'Railway Station',
+      'to': 'Fawara Chowk',
+      'earnings': '+\$6.50',
+      'paymentType': 'Wallet',
+      'status': 'Completed',
+      'statusColor': const Color(0xFF10B981),
+    },
+    {
+      'id': '#TRP-6541',
+      'date': 'Yesterday, 1:00 PM',
+      'passenger': 'Ali Raza',
+      'rating': '4.9',
+      'from': 'Gulshan Colony',
+      'to': 'GT Road',
+      'earnings': '\$0.00',
+      'paymentType': '-',
       'status': 'Cancelled',
       'statusColor': Colors.redAccent,
-      'vehicleType': 'Rickshaw',
-      'vehicleIcon': Icons.electric_rickshaw,
-      'driver': 'M. Usman',
-      'plate': 'RIC-992',
     },
     {
-      'id': '#SW-5512',
-      'date': '01 May, 11:30 PM',
+      'id': '#TRP-5512',
+      'date': '02 May, 09:30 AM',
+      'passenger': 'Hassan Tariq',
+      'rating': '4.7',
       'from': 'Shadiwal Road',
-      'to': 'City Hospital',
-      'fare': '\$15.00',
+      'to': 'Service Mor',
+      'earnings': '+\$12.00',
+      'paymentType': 'Cash',
       'status': 'Completed',
-      'statusColor': Colors.green,
-      'vehicleType': 'Moto',
-      'vehicleIcon': Icons.two_wheeler,
-      'driver': 'Ali Raza',
-      'plate': 'MTO-441',
+      'statusColor': const Color(0xFF10B981),
     },
   ];
 
-  List<Map<String, dynamic>> get _filteredOrders {
-    if (_selectedFilter == 'All') return _allOrders;
-    return _allOrders.where((order) => order['status'] == _selectedFilter).toList();
+  List<Map<String, dynamic>> get _filteredRides {
+    if (_selectedFilter == 'All') return _allRides;
+    return _allRides.where((ride) => ride['status'] == _selectedFilter).toList();
   }
 
   @override
@@ -92,31 +88,78 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-            'Ride History',
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
-            )
+          'Ride History',
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
         ),
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Weekly Summary Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'This Week',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '42 Rides',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    '+\$342.50',
+                    style: TextStyle(
+                      color: Color(0xFF10B981),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
           // Professional Filter Tabs
           Container(
-            color: theme.scaffoldBackgroundColor,
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            padding: const EdgeInsets.only(bottom: 16),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
                   _buildFilterChip('All'),
-                  _buildFilterChip('Upcoming'),
                   _buildFilterChip('Completed'),
                   _buildFilterChip('Cancelled'),
                 ],
@@ -126,15 +169,15 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
 
           // Orders List
           Expanded(
-            child: _filteredOrders.isEmpty
+            child: _filteredRides.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               physics: const BouncingScrollPhysics(),
-              itemCount: _filteredOrders.length,
+              itemCount: _filteredRides.length,
               itemBuilder: (context, index) {
-                final order = _filteredOrders[index];
-                return _buildOrderCard(order);
+                final ride = _filteredRides[index];
+                return _buildRideCard(ride);
               },
             ),
           ),
@@ -158,9 +201,9 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-                Icons.receipt_long_outlined,
-                size: 64,
-                color: isDark ? Colors.grey[600] : const Color(0xFFCBD5E1)
+              Icons.list_alt_rounded,
+              size: 64,
+              color: isDark ? Colors.grey[600] : const Color(0xFFCBD5E1),
             ),
           ),
           const SizedBox(height: 24),
@@ -174,7 +217,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your ride history will appear here',
+            'Your driving history will appear here',
             style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.grey[500] : const Color(0xFF64748B),
@@ -218,10 +261,11 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
+  Widget _buildRideCard(Map<String, dynamic> ride) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final statusColor = order['statusColor'] as Color;
+    final statusColor = ride['statusColor'] as Color;
+    final isCompleted = ride['status'] == 'Completed';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -241,12 +285,12 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
-            // Future order details navigation
+            // Future ride details navigation
           },
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Status and ID
+              // Header: Earnings and Status
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -257,23 +301,27 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(order['vehicleIcon'] as IconData, size: 20, color: theme.colorScheme.primary),
+                          child: Icon(Icons.receipt_long, size: 20, color: isDark ? Colors.grey[400] : const Color(0xFF64748B)),
                         ),
                         const SizedBox(width: 14),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              order['vehicleType'] as String,
-                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: theme.colorScheme.onSurface),
+                              ride['earnings'] as String,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                                color: isCompleted ? const Color(0xFF10B981) : theme.colorScheme.onSurface,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                                order['id'] as String,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8))
+                              ride['date'] as String,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDark ? Colors.grey[500] : const Color(0xFF94A3B8)),
                             ),
                           ],
                         ),
@@ -287,7 +335,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                         border: Border.all(color: statusColor.withOpacity(0.3)),
                       ),
                       child: Text(
-                        order['status'] as String,
+                        ride['status'] as String,
                         style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 12),
                       ),
                     ),
@@ -311,8 +359,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                             width: 2,
                             height: 32,
                             margin: const EdgeInsets.symmetric(vertical: 4),
-                            color: isDark ? Colors.white.withOpacity(0.1) : const Color(0xFFE2E8F0)
-                        ),
+                            color: isDark ? Colors.white.withOpacity(0.1) : const Color(0xFFE2E8F0)),
                         const Icon(Icons.location_on, size: 18, color: Color(0xFFD4AF37)),
                       ],
                     ),
@@ -322,14 +369,14 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            order['from'] as String,
+                            ride['from'] as String,
                             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 28),
                           Text(
-                            order['to'] as String,
+                            ride['to'] as String,
                             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -337,16 +384,11 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                         ],
                       ),
                     ),
-                    // Fare
-                    Text(
-                      order['fare'] as String,
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: theme.colorScheme.primary),
-                    ),
                   ],
                 ),
               ),
 
-              // Footer: Driver info and Action
+              // Footer: Passenger info and Action
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 decoration: BoxDecoration(
@@ -354,6 +396,7 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                 ),
                 child: Row(
                   children: [
+                    // Passenger Avatar
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
@@ -364,28 +407,53 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
                       child: Icon(Icons.person, size: 16, color: isDark ? Colors.grey[400] : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 12),
+
+                    // Passenger Details
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              order['driver'] as String,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.grey[300] : theme.colorScheme.onSurface)
+                            ride['passenger'] as String,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.grey[300] : theme.colorScheme.onSurface),
                           ),
                           const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.star, size: 12, color: Color(0xFFF59E0B)), // Star icon
+                              const SizedBox(width: 4),
+                              Text(
+                                ride['rating'] as String,
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[400] : const Color(0xFF64748B)),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+
+                    // Payment Method Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.05) : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            ride['paymentType'] == 'Cash' ? Icons.payments_outlined : Icons.account_balance_wallet_outlined,
+                            size: 14,
+                            color: isDark ? Colors.grey[300] : const Color(0xFF475569),
+                          ),
+                          const SizedBox(width: 4),
                           Text(
-                              order['plate'] as String,
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isDark ? Colors.grey[500] : const Color(0xFF64748B))
+                            ride['paymentType'] as String,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.grey[300] : const Color(0xFF475569)),
                           ),
                         ],
                       ),
                     ),
-                    Text(
-                      order['date'] as String,
-                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[500] : const Color(0xFF64748B), fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.chevron_right_rounded, size: 20, color: isDark ? Colors.grey[600] : const Color(0xFF94A3B8)),
                   ],
                 ),
               ),

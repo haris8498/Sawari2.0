@@ -6,21 +6,10 @@ class LocationAccessScreen extends StatelessWidget {
   const LocationAccessScreen({super.key});
 
   Future<void> _handleAllowLocation(BuildContext context) async {
-    // Show success snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Location access granted successfully! (Dummy)'),
-        backgroundColor: Colors.green,
-      ),
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
     );
-    
-    // Navigate to Role Selection screen
-    if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-      );
-    }
   }
 
   @override
@@ -32,162 +21,122 @@ class LocationAccessScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFA1C4FD), // Light blue
-              Color(0xFFF6F8FD), // Almost white/light gray
-            ],
-            stops: [0.0, 0.8],
+            colors: [Color(0xFFE2E8F0), Color(0xFFF8FAFC)],
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Glassmorphism Card
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(40),
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                    filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 40.0,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(32, 48, 32, 48),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          width: 1.5,
-                        ),
+                        color: Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(40),
+                        border: Border.all(color: Colors.white.withOpacity(0.5)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 20,
-                            spreadRadius: 5,
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 30,
+                            offset: const Offset(0, 15),
                           ),
                         ],
                       ),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Graphic from distance.png
-                          Image.asset(
-                            'lib/assets/images/distance.png',
-                            height: 220,
-                            fit: BoxFit.contain,
+                          // Icon Container
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2B63B6).withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.location_on_rounded,
+                              size: 64,
+                              color: Color(0xFF2B63B6),
+                            ),
                           ),
                           const SizedBox(height: 32),
-
-                          // Title
                           const Text(
-                            'Enable Location Access',
-                            textAlign: TextAlign.center,
+                            'Allow Location',
                             style: TextStyle(
-                              fontSize: 26,
+                              fontSize: 28,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF0F172A),
-                              letterSpacing: -0.5,
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Subtitle
                           const Text(
-                            'We use your location to find nearby\ndrivers and show accurate ride tracking.',
+                            'To provide a seamless experience, we need access to your location for finding nearby drivers.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF475569),
-                              height: 1.5,
+                              fontSize: 15,
+                              color: Color(0xFF64748B),
+                              height: 1.6,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 48),
 
-                          // Allow Location Button
-                          GestureDetector(
+                          // Primary Button
+                          _buildButton(
+                            text: 'Grant Access',
                             onTap: () => _handleAllowLocation(context),
-                            child: Container(
-                              height: 60,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF2B5DA6),
-                                    Color(0xFF1C3D7A),
-                                  ],
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF2B5DA6,
-                                    ).withValues(alpha: 0.3),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Allow Location',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(
-                                    Icons.location_on_outlined,
-                                    color: Colors.white70,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                            ),
+                            isPrimary: true,
                           ),
                           const SizedBox(height: 16),
 
-                          // Not Now Button
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-                              );
-                            },
-                            child: Container(
-                              height: 60,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                color: const Color(0xFFE2E8F0).withValues(alpha: 0.8),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Not Now',
-                                  style: TextStyle(
-                                    color: Color(0xFF64748B),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          // Secondary Button
+                          _buildButton(
+                            text: 'Skip for Now',
+                            onTap: () => _handleAllowLocation(context),
+                            isPrimary: false,
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required String text,
+    required VoidCallback onTap,
+    required bool isPrimary,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isPrimary ? const Color(0xFF113677) : Colors.transparent,
+          elevation: isPrimary ? 8 : 0,
+          shadowColor: isPrimary ? const Color(0xFF113677).withOpacity(0.4) : Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: isPrimary ? BorderSide.none : const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: isPrimary ? Colors.white : const Color(0xFF64748B),
           ),
         ),
       ),
