@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'otp_verification.dart';
+import 'email_verification_screen.dart';
+import 'services/auth_service.dart';
 
 class PassengerSignUpScreen extends StatefulWidget {
   const PassengerSignUpScreen({super.key});
@@ -14,6 +16,7 @@ class _PassengerSignUpScreenState extends State<PassengerSignUpScreen> {
 
   // Controllers to capture user input
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _cnicController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -22,10 +25,12 @@ class _PassengerSignUpScreenState extends State<PassengerSignUpScreen> {
   // State variables for password toggles
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _cnicController.dispose();
     _passwordController.dispose();
@@ -114,6 +119,23 @@ class _PassengerSignUpScreenState extends State<PassengerSignUpScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                _buildLabel(context, 'Email'),
+                _buildTextField(
+                  context,
+                  controller: _emailController,
+                  hint: 'you@example.com',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Please enter your email';
+                    final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
+                    if (!ok) return 'Enter a valid email address';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
                 _buildLabel(context, 'Phone Number'),
                 _buildTextField(
                   context,
@@ -191,16 +213,7 @@ class _PassengerSignUpScreenState extends State<PassengerSignUpScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const OtpVerificationScreen(isDriver: false),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _isSubmitting ? null : _handleSignUp,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
                       elevation: 2,
@@ -208,15 +221,24 @@ class _PassengerSignUpScreenState extends State<PassengerSignUpScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Sign Up',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -224,6 +246,49 @@ class _PassengerSignUpScreenState extends State<PassengerSignUpScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleSignUp() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final email = _emailController.text.trim();
+      await AuthService.instance.signUpPassenger(
+        name: _nameController.text.trim(),
+        email: email,
+        phone: _phoneController.text.trim(),
+        cnic: _cnicController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EmailVerificationScreen(
+            isDriver: false,
+            email: email,
+          ),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      _showError(e.message ?? 'Sign-up failed');
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }

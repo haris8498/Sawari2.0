@@ -1,4 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import 'models/ride_model.dart';
+import 'services/auth_service.dart';
+import 'services/ride_service.dart';
 
 class DriverEarningsTab extends StatefulWidget {
   const DriverEarningsTab({super.key});
@@ -9,6 +15,28 @@ class DriverEarningsTab extends StatefulWidget {
 
 class _DriverEarningsTabState extends State<DriverEarningsTab> {
   String _selectedPeriod = 'This Week';
+
+  List<RideModel> _filterByPeriod(List<RideModel> rides) {
+    final now = DateTime.now();
+    DateTime start;
+    switch (_selectedPeriod) {
+      case 'Last Week':
+        start = now.subtract(Duration(days: now.weekday + 6));
+        final end = start.add(const Duration(days: 7));
+        return rides
+            .where((r) =>
+                r.requestedAt.isAfter(start) && r.requestedAt.isBefore(end))
+            .toList();
+      case 'This Month':
+        start = DateTime(now.year, now.month, 1);
+        return rides.where((r) => r.requestedAt.isAfter(start)).toList();
+      case 'This Week':
+      default:
+        start = now.subtract(Duration(days: now.weekday - 1));
+        start = DateTime(start.year, start.month, start.day);
+        return rides.where((r) => r.requestedAt.isAfter(start)).toList();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +65,28 @@ class _DriverEarningsTabState extends State<DriverEarningsTab> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Available Balance Card
-            _buildBalanceCard(context),
+      body: StreamBuilder<List<RideModel>>(
+        stream: FirebaseAuth.instance.currentUser == null
+            ? const Stream.empty()
+            : RideService.instance
+                .driverRides(FirebaseAuth.instance.currentUser!.uid),
+        builder: (context, snap) {
+          final allRides = snap.data ?? const <RideModel>[];
+          final periodRides = _filterByPeriod(allRides);
+          final completed = periodRides
+              .where((r) => r.status == RideStatus.completed)
+              .toList();
+          final periodEarnings =
+              completed.fold<double>(0, (s, r) => s + r.fare);
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Available Balance Card
+                _buildBalanceCard(context),
             const SizedBox(height: 32),
 
             // 2. Weekly Chart Section
@@ -92,15 +134,15 @@ class _DriverEarningsTabState extends State<DriverEarningsTab> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildBarChart(context),
+            _buildBarChart(context, completed),
             const SizedBox(height: 32),
 
-            // 3. Stats Grid
+            // 3. Stats Grid (live)
             Row(
               children: [
-                Expanded(child: _buildStatCard(context, 'Total Trips', '42', Icons.route_outlined, Colors.blue)),
+                Expanded(child: _buildStatCard(context, 'Total Trips', '${completed.length}', Icons.route_outlined, Colors.blue)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildStatCard(context, 'Online Hours', '38h 15m', Icons.access_time, Colors.orange)),
+                Expanded(child: _buildStatCard(context, 'Period Earnings', '\$${periodEarnings.toStringAsFixed(2)}', Icons.attach_money, Colors.orange)),
               ],
             ),
             const SizedBox(height: 32),
@@ -132,19 +174,43 @@ class _DriverEarningsTabState extends State<DriverEarningsTab> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildTripTile(context, 'Trip to University of Gujrat', 'Today, 2:45 PM', '+\$14.50', true),
-            _buildTripTile(context, 'Trip to Model Town', 'Today, 11:20 AM', '+\$8.00', true),
-            _buildTripTile(context, 'Instant Cash Out', 'Yesterday, 6:00 PM', '-\$50.00', false),
-            _buildTripTile(context, 'Trip to Railway Station', 'Yesterday, 3:15 PM', '+\$6.50', true),
+            if (completed.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'No completed trips in this period yet.',
+                  style: TextStyle(color: Colors.grey[500]),
+                ),
+              )
+            else
+              ...completed.take(8).map((r) => _buildTripTile(
+                    context,
+                    'Trip: ${r.dropoff.address.isEmpty ? r.vehicleType : r.dropoff.address}',
+                    DateFormat('MMM d, h:mm a').format(r.requestedAt),
+                    '+\$${r.fare.toStringAsFixed(2)}',
+                    true,
+                  )),
 
-            const SizedBox(height: 40),
-          ],
-        ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildBalanceCard(BuildContext context) {
+    return StreamBuilder(
+      stream: AuthService.instance.currentProfileStream(),
+      builder: (context, snap) {
+        final balance = snap.data?.totalEarnings ?? 0;
+        return _buildBalanceCardInner(context, balance);
+      },
+    );
+  }
+
+  Widget _buildBalanceCardInner(BuildContext context, double balance) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -185,9 +251,9 @@ class _DriverEarningsTabState extends State<DriverEarningsTab> {
                   style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  '\$142.50',
-                  style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1.0),
+                Text(
+                  '\$${balance.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1.0),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -214,20 +280,29 @@ class _DriverEarningsTabState extends State<DriverEarningsTab> {
     );
   }
 
-  Widget _buildBarChart(BuildContext context) {
+  Widget _buildBarChart(BuildContext context, List<RideModel> completed) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Dummy data for the week's earnings heights (0.0 to 1.0)
-    final List<Map<String, dynamic>> chartData = [
-      {'day': 'Mon', 'val': 0.4, 'amount': '\$40'},
-      {'day': 'Tue', 'val': 0.7, 'amount': '\$75'},
-      {'day': 'Wed', 'val': 0.3, 'amount': '\$30'},
-      {'day': 'Thu', 'val': 0.9, 'amount': '\$95', 'isToday': true}, // Highlighted
-      {'day': 'Fri', 'val': 0.0, 'amount': '\$0'},
-      {'day': 'Sat', 'val': 0.0, 'amount': '\$0'},
-      {'day': 'Sun', 'val': 0.0, 'amount': '\$0'},
-    ];
+    // Bucket completed rides into the last 7 days.
+    final today = DateTime.now();
+    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final start = today.subtract(Duration(days: today.weekday - 1));
+    final dayStart = DateTime(start.year, start.month, start.day);
+    final daily = List<double>.filled(7, 0);
+    for (final r in completed) {
+      final diff = r.requestedAt.difference(dayStart).inDays;
+      if (diff >= 0 && diff < 7) daily[diff] += r.fare;
+    }
+    final maxVal = daily.fold<double>(0, (m, v) => v > m ? v : m);
+    final List<Map<String, dynamic>> chartData = List.generate(7, (i) {
+      return {
+        'day': dayLabels[i],
+        'val': maxVal == 0 ? 0.0 : (daily[i] / maxVal),
+        'amount': '\$${daily[i].toStringAsFixed(0)}',
+        'isToday': i == today.weekday - 1,
+      };
+    });
 
     return Container(
       height: 200,

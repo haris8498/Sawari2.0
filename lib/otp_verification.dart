@@ -1,23 +1,39 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'driver_dashboard.dart';
 import 'passenger_dashboard.dart';
-import 'driver_dashboard.dart'; // Make sure this file exists in your project
+import 'services/auth_service.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final bool isDriver; // Added flag to determine the role
+  final String? phoneNumber; // E.164 format, e.g. +923001234567
 
-  // Require it in the constructor, defaulting to false
-  const OtpVerificationScreen({super.key, this.isDriver = false});
+  const OtpVerificationScreen({super.key, this.isDriver = false, this.phoneNumber});
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  // Focus nodes for the 4 OTP fields
-  final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
-  final List<TextEditingController> _controllers = List.generate(4, (index) => TextEditingController());
+  // 6-digit codes are standard for Firebase Phone Auth.
+  static const int _otpLength = 6;
+  final List<FocusNode> _focusNodes =
+      List.generate(_otpLength, (_) => FocusNode());
+  final List<TextEditingController> _controllers =
+      List.generate(_otpLength, (_) => TextEditingController());
   bool _assetsPrecached = false;
+  String? _verificationId;
+  bool _isSending = false;
+  bool _isVerifying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.phoneNumber != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _sendCode());
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -26,6 +42,81 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _precacheAssets();
       _assetsPrecached = true;
     }
+  }
+
+  Future<void> _sendCode() async {
+    final phone = widget.phoneNumber;
+    if (phone == null) return;
+    setState(() => _isSending = true);
+    try {
+      await AuthService.instance.sendOtp(
+        phone: phone,
+        onCodeSent: (verificationId, _) {
+          setState(() {
+            _verificationId = verificationId;
+            _isSending = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Verification code sent.')),
+          );
+        },
+        onFailed: (e) {
+          setState(() => _isSending = false);
+          _showError(e.message ?? 'Failed to send code');
+        },
+        onAutoVerified: (cred) async {
+          // Auto-retrieval on Android: complete sign-in.
+          await _completeWithCredential(cred);
+        },
+      );
+    } catch (e) {
+      setState(() => _isSending = false);
+      _showError(e.toString());
+    }
+  }
+
+  Future<void> _completeWithCredential(PhoneAuthCredential cred) async {
+    final user = FirebaseAuth.instance.currentUser;
+    try {
+      if (user != null) {
+        await user.linkWithCredential(cred);
+      } else {
+        await FirebaseAuth.instance.signInWithCredential(cred);
+      }
+      _navigateToDashboard();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'provider-already-linked' ||
+          e.code == 'credential-already-in-use') {
+        _navigateToDashboard();
+      } else {
+        _showError(e.message ?? 'Verification failed');
+      }
+    }
+  }
+
+  void _navigateToDashboard() {
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => widget.isDriver
+            ? const DriverDashboard()
+            : const PassengerDashboard(),
+      ),
+      (_) => false,
+    );
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   void _precacheAssets() {
@@ -48,19 +139,34 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     super.dispose();
   }
 
-  void _verifyOtp() {
-    // Collect OTP and verify (dummy data)
-
-    // Navigate dynamically based on the isDriver flag!
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => widget.isDriver
-            ? const DriverDashboard()
-            : const PassengerDashboard(),
-      ),
-          (route) => false, // Remove all previous routes to prevent going back to login
-    );
+  Future<void> _verifyOtp() async {
+    final code = _controllers.map((c) => c.text).join();
+    // If we have no phone number context, just proceed (the user is already
+    // signed in via email/password).
+    if (widget.phoneNumber == null) {
+      _navigateToDashboard();
+      return;
+    }
+    if (_verificationId == null) {
+      _showError('Code not yet sent. Please wait or tap resend.');
+      return;
+    }
+    if (code.length < _otpLength) {
+      _showError('Enter the full $_otpLength-digit code');
+      return;
+    }
+    setState(() => _isVerifying = true);
+    try {
+      await AuthService.instance.confirmOtp(
+        verificationId: _verificationId!,
+        smsCode: code,
+      );
+      _navigateToDashboard();
+    } on FirebaseAuthException catch (e) {
+      _showError(e.message ?? 'Invalid code');
+    } finally {
+      if (mounted) setState(() => _isVerifying = false);
+    }
   }
 
   @override
@@ -134,10 +240,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               // OTP Input Fields
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(4, (index) {
+                children: List.generate(_otpLength, (index) {
                   return SizedBox(
-                    width: 64,
-                    height: 68,
+                    width: 44,
+                    height: 56,
                     child: TextField(
                       controller: _controllers[index],
                       focusNode: _focusNodes[index],
@@ -169,7 +275,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                       onChanged: (value) {
                         if (value.isNotEmpty) {
-                          if (index < 3) {
+                          if (index < _otpLength - 1) {
                             _focusNodes[index + 1].requestFocus();
                           } else {
                             _focusNodes[index].unfocus();
@@ -202,16 +308,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Verification code resent!'),
-                          backgroundColor: theme.colorScheme.primary,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      );
-                    },
+                    onPressed: _isSending ? null : _sendCode,
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
@@ -235,7 +332,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _verifyOtp,
+                  onPressed: _isVerifying ? null : _verifyOtp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     elevation: 2,
@@ -243,15 +340,24 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Verify & Proceed',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                  child: _isVerifying
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Verify & Proceed',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                 ),
               ),
             ],

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'driver_home_tab.dart';
 import 'driver_earnings_tab.dart';
-import 'passenger_dashboard.dart';
-import 'main.dart'; // For themeNotifier
-import 'notifications_screen.dart';
-import 'settings_screen.dart';
 import 'driver_history_tab.dart';
 import 'driver_profile_tab.dart';
+import 'models/user_model.dart';
+import 'notifications_screen.dart';
+import 'passenger_dashboard.dart';
+import 'services/auth_service.dart';
+import 'settings_screen.dart';
 
 
 class DriverDashboard extends StatefulWidget {
@@ -127,33 +128,47 @@ class _DriverDashboardState extends State<DriverDashboard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Ahmed Ali',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.star, size: 14, color: Color(0xFFD4AF37)),
-                              SizedBox(width: 4),
-                              Text(
-                                '4.95 Pro',
-                                style: TextStyle(color: Color(0xFFD4AF37), fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
+                        StreamBuilder<UserModel?>(
+                          stream: AuthService.instance.currentProfileStream(),
+                          builder: (context, snap) {
+                            final u = snap.data;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  u?.name.isNotEmpty == true ? u!.name : 'Driver',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurface,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.star, size: 14, color: Color(0xFFD4AF37)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${(u?.rating ?? 5.0).toStringAsFixed(2)} Pro',
+                                        style: const TextStyle(
+                                            color: Color(0xFFD4AF37),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),

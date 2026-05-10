@@ -1,15 +1,89 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'passenger_sign_up.dart';
+import 'driver_dashboard.dart';
 import 'driver_sign_up.dart';
-import 'otp_verification.dart';
+import 'models/user_model.dart';
+import 'passenger_dashboard.dart';
+import 'passenger_sign_up.dart';
+import 'services/auth_service.dart';
 
-class SignInScreen extends StatelessWidget {
+class SignInScreen extends StatefulWidget {
   final bool isDriver;
 
   const SignInScreen({super.key, required this.isDriver});
 
   @override
+  State<SignInScreen> createState() => _SignInScreenState();
+}
+
+class _SignInScreenState extends State<SignInScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final emailOk = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email);
+    if (!emailOk || password.isEmpty) {
+      _showError('Enter a valid email and password');
+      return;
+    }
+    setState(() => _isSubmitting = true);
+    try {
+      final user = await AuthService.instance.signInWithEmail(
+        email: email,
+        password: password,
+      );
+      if (!mounted) return;
+      // Verify role matches the screen the user came from.
+      final expectedRole = widget.isDriver ? UserRole.driver : UserRole.passenger;
+      if (user.role != expectedRole) {
+        _showError(
+            'This account is registered as a ${user.role.name}. Please use the correct sign-in.');
+        await AuthService.instance.signOut();
+        return;
+      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => widget.isDriver
+              ? const DriverDashboard()
+              : const PassengerDashboard(),
+        ),
+        (_) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      _showError(e.message ?? 'Sign-in failed');
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDriver = widget.isDriver;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -71,35 +145,24 @@ class SignInScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // CNIC Label
-              RichText(
-                text: TextSpan(
-                  text: 'CNIC ',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface.withOpacity(0.9),
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '(Without dashes)',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.grey[500] : Colors.grey[600],
-                      ),
-                    ),
-                  ],
+              // Email Label
+              Text(
+                'Email',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface.withOpacity(0.9),
                 ),
               ),
               const SizedBox(height: 10),
 
-              // CNIC Field
+              // Email Field
               _buildTextField(
                 context,
-                hint: 'e.g. 1234512345671',
-                icon: Icons.badge_outlined,
-                keyboardType: TextInputType.number,
+                controller: _emailController,
+                hint: 'you@example.com',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 24),
 
@@ -117,6 +180,7 @@ class SignInScreen extends StatelessWidget {
               // Password Field
               _buildTextField(
                 context,
+                controller: _passwordController,
                 hint: '••••••••',
                 icon: Icons.lock_outline,
                 isPassword: true,
@@ -149,15 +213,7 @@ class SignInScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        // IMPORTANT FIX: Passing the isDriver flag here!
-                        builder: (context) => OtpVerificationScreen(isDriver: isDriver),
-                      ),
-                    );
-                  },
+                  onPressed: _isSubmitting ? null : _handleSignIn,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     elevation: 2,
@@ -165,15 +221,24 @@ class SignInScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Sign In',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -221,11 +286,12 @@ class SignInScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTextField(BuildContext context, {required String hint, required IconData icon, bool isPassword = false, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(BuildContext context, {required String hint, required IconData icon, bool isPassword = false, TextInputType keyboardType = TextInputType.text, TextEditingController? controller}) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return TextField(
+      controller: controller,
       obscureText: isPassword,
       keyboardType: keyboardType,
       style: TextStyle(

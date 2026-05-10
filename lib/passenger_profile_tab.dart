@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'auth_gate.dart';
 import 'main.dart'; // Import to access themeNotifier
+import 'models/user_model.dart';
+import 'services/auth_service.dart';
 
 class PassengerProfileTab extends StatelessWidget {
   const PassengerProfileTab({super.key});
@@ -13,12 +16,15 @@ class PassengerProfileTab extends StatelessWidget {
       backgroundColor: isDark
           ? const Color(0xFF0F172A)
           : const Color(0xFFF1F5F9),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            // Profile Header with Gradient Background
-            _buildHeader(context),
+      body: StreamBuilder<UserModel?>(
+        stream: AuthService.instance.currentProfileStream(),
+        builder: (context, snap) {
+          final user = snap.data;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                _buildHeader(context, user),
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -27,8 +33,8 @@ class PassengerProfileTab extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Stats Section
-                  _buildStatsRow(context),
+                  // Stats Section (live)
+                  _buildStatsRow(context, user),
                   const SizedBox(height: 32),
 
                   // Menu Sections
@@ -165,11 +171,13 @@ class PassengerProfileTab extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Handle logout logic
-                        Navigator.of(
-                          context,
-                        ).popUntil((route) => route.isFirst);
+                      onPressed: () async {
+                        await AuthService.instance.signOut();
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const AuthGate()),
+                          (_) => false,
+                        );
                       },
                       icon: const Icon(Icons.logout, color: Colors.redAccent, size: 22),
                       style: OutlinedButton.styleFrom(
@@ -198,13 +206,15 @@ class PassengerProfileTab extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, UserModel? user) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -275,9 +285,9 @@ class PassengerProfileTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Haris',
-                style: TextStyle(
+              Text(
+                user?.name.isNotEmpty == true ? user!.name : 'Passenger',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -297,7 +307,7 @@ class PassengerProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'haris@example.com',
+            user?.phone.isNotEmpty == true ? user!.phone : '',
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,
@@ -309,7 +319,7 @@ class PassengerProfileTab extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(BuildContext context) {
+  Widget _buildStatsRow(BuildContext context, UserModel? user) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -329,11 +339,11 @@ class PassengerProfileTab extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(context, 'Total Rides', '124'),
+          _buildStatItem(context, 'Total Rides', '${user?.totalRides ?? 0}'),
           _buildDivider(context),
-          _buildStatItem(context, 'Rating', '4.9'),
+          _buildStatItem(context, 'Rating', (user?.rating ?? 5.0).toStringAsFixed(1)),
           _buildDivider(context),
-          _buildStatItem(context, 'Joined', '2 Years'),
+          _buildStatItem(context, 'Wallet', '\$${(user?.walletBalance ?? 0).toStringAsFixed(0)}'),
         ],
       ),
     );

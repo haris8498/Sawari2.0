@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'auth_gate.dart';
 import 'main.dart'; // Import to access themeNotifier
+import 'models/user_model.dart';
+import 'services/auth_service.dart';
 
 class DriverProfileTab extends StatelessWidget {
   const DriverProfileTab({super.key});
@@ -11,12 +14,15 @@ class DriverProfileTab extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            // Profile Header with Gradient Background
-            _buildHeader(context),
+      body: StreamBuilder<UserModel?>(
+        stream: AuthService.instance.currentProfileStream(),
+        builder: (context, snap) {
+          final user = snap.data;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                _buildHeader(context, user),
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -25,8 +31,8 @@ class DriverProfileTab extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Performance Stats Section
-                  _buildStatsRow(context),
+                  // Performance Stats Section (live)
+                  _buildStatsRow(context, user),
                   const SizedBox(height: 32),
 
                   // Vehicle & Documents (Driver Specific)
@@ -35,21 +41,27 @@ class DriverProfileTab extends StatelessWidget {
                     context,
                     Icons.directions_car_outlined,
                     'Vehicle Information',
-                    'Toyota Corolla • LEC-1234',
+                    '${user?.vehicleMakeModel ?? '—'} • ${user?.vehicleRegistration ?? '—'}',
                   ),
                   _buildDocumentMenuItem(
                     context,
                     Icons.badge_outlined,
                     'Driving License',
-                    'Approved',
-                    const Color(0xFF10B981), // Green
+                    user?.licenseNumber == null ? 'Not provided' : 'On file',
+                    user?.approvalStatus == 'approved'
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFF59E0B),
                   ),
                   _buildDocumentMenuItem(
                     context,
                     Icons.description_outlined,
-                    'Vehicle Registration',
-                    'Pending Review',
-                    const Color(0xFFF59E0B), // Amber
+                    'Application Status',
+                    (user?.approvalStatus ?? 'pending').toUpperCase(),
+                    user?.approvalStatus == 'approved'
+                        ? const Color(0xFF10B981)
+                        : (user?.approvalStatus == 'rejected'
+                            ? Colors.redAccent
+                            : const Color(0xFFF59E0B)),
                   ),
 
                   const SizedBox(height: 32),
@@ -162,9 +174,14 @@ class DriverProfileTab extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Handle logout logic
-                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      onPressed: () async {
+                        await AuthService.instance.updateProfile({'driverStatus': 'offline'});
+                        await AuthService.instance.signOut();
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (_) => const AuthGate()),
+                          (_) => false,
+                        );
                       },
                       icon: const Icon(Icons.logout, color: Colors.redAccent, size: 22),
                       style: OutlinedButton.styleFrom(
@@ -193,13 +210,15 @@ class DriverProfileTab extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, UserModel? user) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
@@ -270,9 +289,9 @@ class DriverProfileTab extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Ahmed Ali',
-                style: TextStyle(
+              Text(
+                user?.name.isNotEmpty == true ? user!.name : 'Driver',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -292,7 +311,7 @@ class DriverProfileTab extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '+92 300 1234567',
+            user?.phone.isNotEmpty == true ? user!.phone : '',
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,
@@ -304,7 +323,7 @@ class DriverProfileTab extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(BuildContext context) {
+  Widget _buildStatsRow(BuildContext context, UserModel? user) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -325,11 +344,11 @@ class DriverProfileTab extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(context, 'Rating', '4.95', icon: Icons.star, iconColor: const Color(0xFFF59E0B)),
+          _buildStatItem(context, 'Rating', (user?.rating ?? 5.0).toStringAsFixed(2), icon: Icons.star, iconColor: const Color(0xFFF59E0B)),
           _buildDivider(context),
-          _buildStatItem(context, 'Acceptance', '94%', icon: Icons.check_circle, iconColor: const Color(0xFF10B981)),
+          _buildStatItem(context, 'Status', (user?.driverStatus ?? 'offline').toUpperCase(), icon: Icons.check_circle, iconColor: const Color(0xFF10B981)),
           _buildDivider(context),
-          _buildStatItem(context, 'Total Trips', '1,248', icon: Icons.route, iconColor: theme.colorScheme.primary),
+          _buildStatItem(context, 'Total Trips', '${user?.totalRides ?? 0}', icon: Icons.route, iconColor: theme.colorScheme.primary),
         ],
       ),
     );

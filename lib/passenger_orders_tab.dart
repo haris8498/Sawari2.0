@@ -1,4 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import 'models/ride_model.dart';
+import 'services/ride_service.dart';
 
 class PassengerOrdersTab extends StatefulWidget {
   const PassengerOrdersTab({super.key});
@@ -10,7 +15,8 @@ class PassengerOrdersTab extends StatefulWidget {
 class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
   String _selectedFilter = 'All';
 
-  final List<Map<String, dynamic>> _allOrders = [
+  // ignore: unused_field
+  final List<Map<String, dynamic>> _legacyOrders = [
     {
       'id': '#SW-8271',
       'date': 'Today, 10:30 AM',
@@ -78,9 +84,42 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
     },
   ];
 
-  List<Map<String, dynamic>> get _filteredOrders {
-    if (_selectedFilter == 'All') return _allOrders;
-    return _allOrders.where((order) => order['status'] == _selectedFilter).toList();
+  String _statusLabel(RideStatus s) {
+    switch (s) {
+      case RideStatus.completed:
+        return 'Completed';
+      case RideStatus.cancelled:
+        return 'Cancelled';
+      case RideStatus.requested:
+      case RideStatus.accepted:
+      case RideStatus.arrived:
+      case RideStatus.ongoing:
+        return 'Upcoming';
+    }
+  }
+
+  Color _statusColor(RideStatus s) {
+    switch (s) {
+      case RideStatus.completed:
+        return Colors.green;
+      case RideStatus.cancelled:
+        return Colors.redAccent;
+      default:
+        return const Color(0xFFD4AF37);
+    }
+  }
+
+  IconData _vehicleIcon(String vt) {
+    final v = vt.toLowerCase();
+    if (v.contains('moto') || v.contains('bike')) return Icons.two_wheeler;
+    if (v.contains('rickshaw')) return Icons.electric_rickshaw;
+    if (v.contains('city')) return Icons.location_city;
+    return Icons.directions_car;
+  }
+
+  List<RideModel> _filter(List<RideModel> rides) {
+    if (_selectedFilter == 'All') return rides;
+    return rides.where((r) => _statusLabel(r.status) == _selectedFilter).toList();
   }
 
   @override
@@ -124,19 +163,29 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
             ),
           ),
 
-          // Orders List
+          // Orders List (live)
           Expanded(
-            child: _filteredOrders.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              physics: const BouncingScrollPhysics(),
-              itemCount: _filteredOrders.length,
-              itemBuilder: (context, index) {
-                final order = _filteredOrders[index];
-                return _buildOrderCard(order);
-              },
-            ),
+            child: Builder(builder: (context) {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid == null) return _buildEmptyState();
+              return StreamBuilder<List<RideModel>>(
+                stream: RideService.instance.passengerRides(uid),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final rides = _filter(snap.data ?? const <RideModel>[]);
+                  if (rides.isEmpty) return _buildEmptyState();
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: rides.length,
+                    itemBuilder: (context, index) =>
+                        _buildOrderCard(rides[index]),
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),
@@ -218,10 +267,22 @@ class _PassengerOrdersTabState extends State<PassengerOrdersTab> {
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
+  Widget _buildOrderCard(RideModel ride) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final statusColor = order['statusColor'] as Color;
+    final statusColor = _statusColor(ride.status);
+    final order = <String, dynamic>{
+      'id': '#${ride.id.substring(0, ride.id.length > 6 ? 6 : ride.id.length).toUpperCase()}',
+      'date': DateFormat('MMM d, h:mm a').format(ride.requestedAt),
+      'from': ride.pickup.address.isEmpty ? '—' : ride.pickup.address,
+      'to': ride.dropoff.address.isEmpty ? '—' : ride.dropoff.address,
+      'fare': '\$${ride.fare.toStringAsFixed(2)}',
+      'status': _statusLabel(ride.status),
+      'vehicleType': ride.vehicleType,
+      'vehicleIcon': _vehicleIcon(ride.vehicleType),
+      'driver': ride.driverName ?? 'Waiting for assignment',
+      'plate': ride.vehiclePlate ?? '---',
+    };
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),

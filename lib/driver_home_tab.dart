@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'services/auth_service.dart';
+
 class DriverHomeTab extends StatefulWidget {
   const DriverHomeTab({super.key});
 
@@ -9,6 +11,27 @@ class DriverHomeTab extends StatefulWidget {
 
 class _DriverHomeTabState extends State<DriverHomeTab> {
   bool isOnline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AuthService.instance.getCurrentProfile().then((u) {
+      if (!mounted || u == null) return;
+      setState(() => isOnline = u.driverStatus == 'online');
+    });
+  }
+
+  Future<void> _setOnline(bool v) async {
+    setState(() => isOnline = v);
+    try {
+      await AuthService.instance.updateProfile({
+        'driverStatus': v ? 'online' : 'offline',
+      });
+    } catch (_) {
+      // Revert on failure.
+      if (mounted) setState(() => isOnline = !v);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +136,7 @@ class _DriverHomeTabState extends State<DriverHomeTab> {
         if (!isOnline)
           Center(
             child: GestureDetector(
-              onTap: () => setState(() => isOnline = true),
+              onTap: () => _setOnline(true),
               child: Container(
                 width: 140,
                 height: 140,
@@ -198,7 +221,7 @@ class _DriverHomeTabState extends State<DriverHomeTab> {
                       Switch(
                         value: isOnline,
                         activeColor: const Color(0xFF10B981),
-                        onChanged: (val) => setState(() => isOnline = val),
+                        onChanged: _setOnline,
                       ),
                     ],
                   ),

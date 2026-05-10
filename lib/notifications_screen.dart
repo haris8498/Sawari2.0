@@ -1,7 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import 'models/notification_model.dart';
+import 'services/notification_service.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
+
+  static IconData _iconForType(String type) {
+    switch (type) {
+      case 'ride':
+        return Icons.directions_car_filled_outlined;
+      case 'wallet':
+        return Icons.account_balance_wallet_outlined;
+      case 'promo':
+        return Icons.local_offer_outlined;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
+
+  static Color _colorForType(String type) {
+    switch (type) {
+      case 'ride':
+        return Colors.blue;
+      case 'wallet':
+        return Colors.green;
+      case 'promo':
+        return Colors.orange;
+      default:
+        return Colors.indigo;
+    }
+  }
+
+  static String _relative(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    if (diff.inDays < 7) return '${diff.inDays} d ago';
+    return DateFormat('MMM d').format(d);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +64,53 @@ class NotificationsScreen extends StatelessWidget {
           icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.done_all, color: theme.colorScheme.onSurface),
+            tooltip: 'Mark all read',
+            onPressed: () => NotificationService.instance.markAllRead(),
+          ),
+        ],
       ),
-      body: ListView.builder(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return _buildNotificationItem(
-            context,
-            'Promotion ${index + 1}',
-            'Get 50% off on your next 3 rides! Use code SAWARI50.',
-            '2 hours ago',
-            Icons.local_offer_outlined,
-            Colors.orange, // Can be dynamic based on notification type later
+      body: StreamBuilder<List<NotificationModel>>(
+        stream: NotificationService.instance.stream(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final items = snap.data ?? const <NotificationModel>[];
+          if (items.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  'You have no notifications yet.',
+                  style: TextStyle(color: Colors.grey[500]),
+                ),
+              ),
+            );
+          }
+          return ListView.builder(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final n = items[index];
+              return GestureDetector(
+                onTap: () => NotificationService.instance.markRead(n.id),
+                child: Opacity(
+                  opacity: n.read ? 0.65 : 1.0,
+                  child: _buildNotificationItem(
+                    context,
+                    n.title,
+                    n.body,
+                    _relative(n.createdAt),
+                    _iconForType(n.type),
+                    _colorForType(n.type),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

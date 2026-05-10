@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Profile photos: owner write, everyone signed-in read.
+    match /users/{uid}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSelf(uid)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Driver documents: owner only.
+    match /drivers/{uid}/{allPaths=**} {
+      allow read, write: if isSelf(uid);
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

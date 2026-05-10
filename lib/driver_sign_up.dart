@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'otp_verification.dart';
+import 'email_verification_screen.dart';
+import 'services/auth_service.dart';
 
 class DriverSignUpScreen extends StatefulWidget {
   const DriverSignUpScreen({super.key});
@@ -12,9 +14,11 @@ class DriverSignUpScreen extends StatefulWidget {
 class _DriverSignUpScreenState extends State<DriverSignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
+  bool _isSubmitting = false;
 
   // Controllers
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _cnicController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -25,6 +29,7 @@ class _DriverSignUpScreenState extends State<DriverSignUpScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _cnicController.dispose();
     _passwordController.dispose();
@@ -117,6 +122,22 @@ class _DriverSignUpScreenState extends State<DriverSignUpScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your name';
                         }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      context,
+                      controller: _emailController,
+                      label: 'Email',
+                      hint: 'you@example.com',
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        final v = value?.trim() ?? '';
+                        if (v.isEmpty) return 'Please enter your email';
+                        final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
+                        if (!ok) return 'Enter a valid email address';
                         return null;
                       },
                     ),
@@ -251,17 +272,7 @@ class _DriverSignUpScreenState extends State<DriverSignUpScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            // CRITICAL FIX: Pass the isDriver flag to true!
-                            builder: (context) => const OtpVerificationScreen(isDriver: true),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _isSubmitting ? null : _handleSubmit,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
                       elevation: 2,
@@ -269,10 +280,19 @@ class _DriverSignUpScreenState extends State<DriverSignUpScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
-                    label: const Text(
-                      'Submit Application',
-                      style: TextStyle(
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 22),
+                    label: Text(
+                      _isSubmitting ? 'Submitting...' : 'Submit Application',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -286,6 +306,52 @@ class _DriverSignUpScreenState extends State<DriverSignUpScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final email = _emailController.text.trim();
+      await AuthService.instance.signUpDriver(
+        name: _nameController.text.trim(),
+        email: email,
+        phone: _phoneController.text.trim(),
+        cnic: _cnicController.text.trim(),
+        password: _passwordController.text,
+        licenseNumber: _licenseController.text.trim(),
+        vehicleMakeModel: _vehicleController.text.trim(),
+        vehicleRegistration: _registrationController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EmailVerificationScreen(
+            isDriver: true,
+            email: email,
+          ),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      _showError(e.message ?? 'Sign-up failed');
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }

@@ -1,4 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import 'models/ride_model.dart';
+import 'services/ride_service.dart';
 
 class DriverHistoryTab extends StatefulWidget {
   const DriverHistoryTab({super.key});
@@ -10,8 +15,53 @@ class DriverHistoryTab extends StatefulWidget {
 class _DriverHistoryTabState extends State<DriverHistoryTab> {
   String _selectedFilter = 'All';
 
-  // Dummy data tailored for a Driver's perspective
-  final List<Map<String, dynamic>> _allRides = [
+  String _statusLabel(RideStatus s) {
+    switch (s) {
+      case RideStatus.completed:
+        return 'Completed';
+      case RideStatus.cancelled:
+        return 'Cancelled';
+      default:
+        return 'Active';
+    }
+  }
+
+  Color _statusColor(RideStatus s) {
+    switch (s) {
+      case RideStatus.completed:
+        return const Color(0xFF10B981);
+      case RideStatus.cancelled:
+        return Colors.redAccent;
+      default:
+        return const Color(0xFFD4AF37);
+    }
+  }
+
+  Map<String, dynamic> _toCard(RideModel r) {
+    final status = _statusLabel(r.status);
+    return {
+      'id': r.id,
+      'date': DateFormat('MMM d, h:mm a').format(r.requestedAt),
+      'passenger': r.passengerName ?? 'Passenger',
+      'rating': '—',
+      'from': r.pickup.address.isEmpty ? '—' : r.pickup.address,
+      'to': r.dropoff.address.isEmpty ? '—' : r.dropoff.address,
+      'earnings': r.status == RideStatus.completed
+          ? '+\$${r.fare.toStringAsFixed(2)}'
+          : '\$0.00',
+      'paymentType': r.paymentMethod == 'wallet' ? 'Wallet' : (r.paymentMethod == 'cash' ? 'Cash' : '-'),
+      'status': status,
+      'statusColor': _statusColor(r.status),
+    };
+  }
+
+  List<RideModel> _filter(List<RideModel> rides) {
+    if (_selectedFilter == 'All') return rides;
+    return rides.where((r) => _statusLabel(r.status) == _selectedFilter).toList();
+  }
+
+  // ignore: unused_field
+  final List<Map<String, dynamic>> _legacyRides = [
     {
       'id': '#TRP-8271',
       'date': 'Today, 2:45 PM',
@@ -74,10 +124,6 @@ class _DriverHistoryTabState extends State<DriverHistoryTab> {
     },
   ];
 
-  List<Map<String, dynamic>> get _filteredRides {
-    if (_selectedFilter == 'All') return _allRides;
-    return _allRides.where((ride) => ride['status'] == _selectedFilter).toList();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,52 +148,66 @@ class _DriverHistoryTabState extends State<DriverHistoryTab> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Weekly Summary Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'This Week',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+          // Live Summary Header
+          Builder(builder: (context) {
+            final uid = FirebaseAuth.instance.currentUser?.uid;
+            if (uid == null) return const SizedBox.shrink();
+            return StreamBuilder<List<RideModel>>(
+              stream: RideService.instance.driverRides(uid),
+              builder: (context, snap) {
+                final rides = snap.data ?? const <RideModel>[];
+                final completed =
+                    rides.where((r) => r.status == RideStatus.completed).toList();
+                final earnings =
+                    completed.fold<double>(0, (s, r) => s + r.fare);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'All Time',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.grey[400] : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${completed.length} Rides',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '42 Rides',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: theme.colorScheme.onSurface,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '+\$${earnings.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Color(0xFF10B981),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    ],
                   ),
-                  child: const Text(
-                    '+\$342.50',
-                    style: TextStyle(
-                      color: Color(0xFF10B981),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+                );
+              },
+            );
+          }),
           const SizedBox(height: 12),
 
           // Professional Filter Tabs
@@ -167,19 +227,29 @@ class _DriverHistoryTabState extends State<DriverHistoryTab> {
             ),
           ),
 
-          // Orders List
+          // Rides List (live)
           Expanded(
-            child: _filteredRides.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              physics: const BouncingScrollPhysics(),
-              itemCount: _filteredRides.length,
-              itemBuilder: (context, index) {
-                final ride = _filteredRides[index];
-                return _buildRideCard(ride);
-              },
-            ),
+            child: Builder(builder: (context) {
+              final uid = FirebaseAuth.instance.currentUser?.uid;
+              if (uid == null) return _buildEmptyState();
+              return StreamBuilder<List<RideModel>>(
+                stream: RideService.instance.driverRides(uid),
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final rides = _filter(snap.data ?? const <RideModel>[]);
+                  if (rides.isEmpty) return _buildEmptyState();
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: rides.length,
+                    itemBuilder: (context, index) =>
+                        _buildRideCard(_toCard(rides[index])),
+                  );
+                },
+              );
+            }),
           ),
         ],
       ),

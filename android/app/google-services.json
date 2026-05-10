@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "376717499507",
+    "project_id": "sawari-e4ebf",
+    "storage_bucket": "sawari-e4ebf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:376717499507:android:54a613661494f3fed19e06",
+        "android_client_info": {
+          "package_name": "com.example.sawari"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdwNSBEJVTt_kZg15zd280voUtGfLRQAA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

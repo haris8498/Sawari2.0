@@ -1,8 +1,84 @@
 import 'package:flutter/material.dart';
 
+import 'services/support_service.dart';
+
 class HelpSupportScreen extends StatelessWidget {
   final String title;
   const HelpSupportScreen({super.key, required this.title});
+
+  Future<void> _openTicketSheet(BuildContext context) async {
+    final subjectCtrl = TextEditingController();
+    final messageCtrl = TextEditingController();
+    final theme = Theme.of(context);
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Contact Support',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: subjectCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Subject', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageCtrl,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                    labelText: 'Describe your issue',
+                    border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (subjectCtrl.text.trim().isEmpty ||
+                        messageCtrl.text.trim().isEmpty) return;
+                    try {
+                      await SupportService.instance.submitTicket(
+                        subject: subjectCtrl.text.trim(),
+                        message: messageCtrl.text.trim(),
+                      );
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                            content: Text('Ticket submitted. We will get back to you.')));
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text('Failed: $e')));
+                      }
+                    }
+                  },
+                  child: const Text('Submit'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +103,11 @@ class HelpSupportScreen extends StatelessWidget {
           icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openTicketSheet(context),
+        icon: const Icon(Icons.send_rounded),
+        label: const Text('Contact Us'),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

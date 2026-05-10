@@ -1,10 +1,101 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import 'models/wallet_transaction.dart';
+import 'services/wallet_service.dart';
 
 class PassengerWalletTab extends StatelessWidget {
   const PassengerWalletTab({super.key});
 
+  static String _fmtMoney(double amount) =>
+      '\$${amount.toStringAsFixed(2)}';
+
+  static String _fmtDate(DateTime d) =>
+      DateFormat('MMM d, h:mm a').format(d);
+
+  static IconData _iconFor(TxnType t) {
+    switch (t) {
+      case TxnType.topup:
+        return Icons.account_balance_wallet_rounded;
+      case TxnType.ridePayment:
+        return Icons.directions_car_filled;
+      case TxnType.refund:
+        return Icons.refresh_rounded;
+      case TxnType.withdrawal:
+        return Icons.arrow_downward_rounded;
+      case TxnType.bonus:
+        return Icons.card_giftcard_rounded;
+    }
+  }
+
+  Future<void> _showTopUpSheet(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final theme = Theme.of(context);
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Top Up Wallet',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ctrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Amount',
+                  prefixText: '\$ ',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final amount = double.tryParse(ctrl.text.trim());
+                    if (amount == null || amount <= 0) return;
+                    try {
+                      await WalletService.instance.topUp(amount: amount);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    } catch (e) {
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(content: Text('Failed: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Confirm'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -44,8 +135,14 @@ class PassengerWalletTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Premium Balance Card
-            _buildPremiumBalanceCard(context),
+            // Premium Balance Card (live)
+            StreamBuilder<double>(
+              stream: uid == null
+                  ? const Stream.empty()
+                  : WalletService.instance.balanceStream(uid),
+              builder: (context, snap) =>
+                  _buildPremiumBalanceCard(context, snap.data ?? 0),
+            ),
             const SizedBox(height: 36),
 
             // Quick Actions Hub
@@ -54,10 +151,15 @@ class PassengerWalletTab extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildActionChip(context, Icons.add_rounded, 'Top Up', const Color(0xFF6366F1)),
-                _buildActionChip(context, Icons.swap_horiz_rounded, 'Transfer', const Color(0xFFF59E0B)),
-                _buildActionChip(context, Icons.history_rounded, 'History', const Color(0xFF10B981)),
-                _buildActionChip(context, Icons.more_horiz_rounded, 'More', const Color(0xFF64748B)),
+                _buildActionChip(context, Icons.add_rounded, 'Top Up',
+                    const Color(0xFF6366F1),
+                    onTap: () => _showTopUpSheet(context)),
+                _buildActionChip(context, Icons.swap_horiz_rounded, 'Transfer',
+                    const Color(0xFFF59E0B)),
+                _buildActionChip(context, Icons.history_rounded, 'History',
+                    const Color(0xFF10B981)),
+                _buildActionChip(context, Icons.more_horiz_rounded, 'More',
+                    const Color(0xFF64748B)),
               ],
             ),
             const SizedBox(height: 36),
@@ -108,9 +210,43 @@ class PassengerWalletTab extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _buildTransactionTile(context, 'Premium Ride', 'Today, 2:45 PM', '-\$24.50', Colors.redAccent, Icons.directions_car_filled),
-            _buildTransactionTile(context, 'Wallet Top-up', 'Yesterday, 10:20 AM', '+\$100.00', const Color(0xFF10B981), Icons.account_balance_wallet_rounded),
-            _buildTransactionTile(context, 'Ride Cancellation', 'May 02, 2024', '+\$5.00', const Color(0xFF10B981), Icons.refresh_rounded),
+            StreamBuilder<List<WalletTransaction>>(
+              stream: uid == null
+                  ? const Stream.empty()
+                  : WalletService.instance.transactionsStream(uid),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                final items = snap.data ?? const <WalletTransaction>[];
+                if (items.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'No transactions yet.',
+                      style: TextStyle(color: Colors.grey[500]),
+                    ),
+                  );
+                }
+                return Column(
+                  children: items.take(10).map((t) {
+                    final isCredit = t.amount >= 0;
+                    final sign = isCredit ? '+' : '-';
+                    return _buildTransactionTile(
+                      context,
+                      t.note ?? t.type.name,
+                      _fmtDate(t.createdAt),
+                      '$sign${_fmtMoney(t.amount.abs())}',
+                      isCredit ? const Color(0xFF10B981) : Colors.redAccent,
+                      _iconFor(t.type),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
 
             const SizedBox(height: 40),
           ],
@@ -131,7 +267,7 @@ class PassengerWalletTab extends StatelessWidget {
     );
   }
 
-  Widget _buildPremiumBalanceCard(BuildContext context) {
+  Widget _buildPremiumBalanceCard(BuildContext context, double balance) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -188,9 +324,9 @@ class PassengerWalletTab extends StatelessWidget {
                             style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            '\$2,450.50',
-                            style: TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w900, letterSpacing: -1.5),
+                          Text(
+                            _fmtMoney(balance),
+                            style: const TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w900, letterSpacing: -1.5),
                           ),
                         ],
                       ),
@@ -238,7 +374,7 @@ class PassengerWalletTab extends StatelessWidget {
     );
   }
 
-  Widget _buildActionChip(BuildContext context, IconData icon, String label, Color color) {
+  Widget _buildActionChip(BuildContext context, IconData icon, String label, Color color, {VoidCallback? onTap}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -248,7 +384,7 @@ class PassengerWalletTab extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () {},
+            onTap: onTap ?? () {},
             child: Container(
               width: 64,
               height: 64,

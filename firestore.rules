@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function role(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
+    // ---------------------- USERS ----------------------
+    match /users/{uid} {
+      // Anyone signed in can read public profile fields. Tighten if needed.
+      allow read: if isSignedIn();
+
+      // Only the owner can create/update their own document.
+      allow create: if isSelf(uid)
+        && request.resource.data.role in ['passenger', 'driver'];
+      allow update: if isSelf(uid);
+      allow delete: if false;
+
+      // Per-user wallet transactions (subcollection).
+      match /transactions/{txnId} {
+        allow read: if isSelf(uid);
+        // Writes only via trusted server / Cloud Functions in production.
+        // For dev convenience we allow the owner to create their own
+        // transactions (e.g. top-ups from the app).
+        allow create: if isSelf(uid);
+        allow update, delete: if false;
+      }
+
+      // Per-user notifications (delivered by backend).
+      match /notifications/{nid} {
+        allow read, update: if isSelf(uid);
+        allow create, delete: if false; // server-side only
+      }
+    }
+
+    // ---------------------- RIDES ----------------------
+    match /rides/{rideId} {
+      // Open requests are readable by signed-in drivers; participants always see theirs.
+      allow read: if isSignedIn() && (
+        resource.data.passengerId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
+        (resource.data.status == 'requested' && role(request.auth.uid) == 'driver')
+      );
+
+      // Passenger creates the ride request.
+      allow create: if isSignedIn()
+        && request.resource.data.passengerId == request.auth.uid
+        && request.resource.data.status == 'requested';
+
+      // Updates: passenger can cancel; driver can accept/progress/complete.
+      allow update: if isSignedIn() && (
+        resource.data.passengerId == request.auth.uid ||
+        resource.data.driverId == request.auth.uid ||
+        (resource.data.status == 'requested' && role(request.auth.uid) == 'driver')
+      );
+
+      allow delete: if false;
+    }
+
+    // ---------------------- SUPPORT TICKETS ----------------------
+    match /supportTickets/{ticketId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
